@@ -1,0 +1,52 @@
+{
+  // === 核心配置 ===
+
+  // 全局 wiki 绝对路径。非空时覆盖 wiki_base，所有项目写入同一知识库
+  // 示例: "E:/obsidian存储仓库/知识库/wiki"
+  "wiki_root": "",
+
+  // wiki 根目录名（相对于项目根目录，wiki_root 为空时生效）
+  "wiki_base": "wiki",
+
+  // 开发知识点子目录名
+  "dev_notes_dir": "dev-notes",
+
+  // 运行模式: "linked"（知识库联动）/ "standalone"（独立运行）/ "auto"（自动判定）
+  // auto 判定逻辑:
+  //   wiki_root 非空 AND concepts_dir 存在 AND entities_dir 存在 → linked + wiki 链接
+  //   wiki_root 非空但无 concepts/entities → linked + 纯文本
+  //   wiki_root 为空 → standalone + 标签格式
+  "mode": "auto",
+
+  // === 链接适配 ===
+
+  // 概念页目录名（支持自定义，如 "概念"）
+  "concepts_dir": "concepts",
+
+  // 实体页目录名（支持自定义，如 "实体"）
+  "entities_dir": "entities",
+
+  // 链接样式: "wiki"（双向链接）/ "tag"（标签格式）/ "text"（纯文本）/ "auto"（自动判定）
+  "link_style": "auto",
+
+  // === 分类配置 ===
+
+  // 7 类知识的子目录名（可自定义）
+  "categories": {
+    "bugs": "bugs",
+    "pitfalls": "pitfalls",
+    "recipes": "recipes",
+    "decisions": "decisions",
+    "designs": "designs",
+    "libs": "libs",
+    "perf": "perf"
+  },
+
+  // === 索引和日志 ===
+
+  // 索引文件名
+  "index_file": "index.md",
+
+  // 日志文件名
+  "log_file": "log.md"
+}

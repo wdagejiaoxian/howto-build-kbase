@@ -1,0 +1,22 @@
+# 用户本地配置
+.obsidian/
+.vscode/
+.idea/
+
+# 用户个人配置（含路径信息）
+.dev-extract.json
+.knowledge-base.json
+opencode.json
+CLAUDE.md
+
+# 用户原始资料（可选，根据隐私需求取消注释）
+# 原始资料/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 临时文件
+*.tmp
+*.log

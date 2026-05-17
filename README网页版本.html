@@ -1,0 +1,1722 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>知识库构建器 - 5分钟从零搭建结构化知识库</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0D0D0D;
+            --bg-card: #1A1A1A;
+            --bg-elevated: #242424;
+            --accent: #E87A3C;
+            --accent-light: #FFB080;
+            --accent-glow: rgba(232, 122, 60, 0.4);
+            --text-primary: #FFFFFF;
+            --text-secondary: #A0A0A0;
+            --text-muted: #666666;
+            --gradient-1: linear-gradient(135deg, #E87A3C 0%, #FF6B35 50%, #FF8F5A 100%);
+            --gradient-2: linear-gradient(135deg, #1A1A1A 0%, #2D2D2D 100%);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+
+        /* Noise texture overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        h1, h2, h3 { font-family: 'Noto Serif SC', serif; font-weight: 700; line-height: 1.2; }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 2rem; }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            padding: 4rem 2rem;
+        }
+
+        /* Animated background orbs */
+        .hero::before, .hero::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            animation: float 8s ease-in-out infinite;
+        }
+
+        .hero::before {
+            width: 600px; height: 600px;
+            background: var(--accent-glow);
+            top: -200px; left: -200px;
+            animation-delay: 0s;
+        }
+
+        .hero::after {
+            width: 400px; height: 400px;
+            background: rgba(100, 100, 255, 0.2);
+            bottom: -100px; right: -100px;
+            animation-delay: -4s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(30px, -30px) scale(1.05); }
+        }
+
+        /* Hero canvas for particles */
+        #hero-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.625rem 1.25rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 100px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            backdrop-filter: blur(10px);
+            animation: fadeInUp 0.8s ease-out;
+            position: relative;
+            z-index: 1;
+        }
+
+        .badge-dot {
+            width: 8px; height: 8px;
+            background: var(--accent);
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+
+        /* Main Title */
+        .hero-title {
+            font-size: clamp(3rem, 10vw, 6rem);
+            font-weight: 900;
+            letter-spacing: -0.02em;
+            margin-bottom: 1.5rem;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: fadeInUp 0.8s ease-out 0.1s both;
+        }
+
+        .hero-subtitle {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin-bottom: 3rem;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        /* CTA Buttons */
+        .cta-group {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            animation: fadeInUp 0.8s ease-out 0.3s both;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background: var(--gradient-1);
+            color: white;
+            box-shadow: 0 4px 24px var(--accent-glow);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px var(--accent-glow);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Scroll indicator */
+        .scroll-indicator {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .scroll-indicator:hover {
+            color: var(--accent);
+        }
+
+        .scroll-indicator:hover svg {
+            stroke: var(--accent);
+        }
+
+        .scroll-indicator-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .scroll-indicator-text {
+            line-height: 1;
+        }
+
+        .scroll-indicator svg {
+            width: 24px; height: 24px;
+            stroke: var(--text-muted);
+            transition: all 0.3s ease;
+            animation: bounce-arrow 2s ease-in-out infinite;
+        }
+
+        @keyframes bounce-arrow {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(6px); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Features Section */
+        .features {
+            padding: 8rem 0;
+            position: relative;
+        }
+
+        .section-label {
+            display: inline-block;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: var(--accent);
+            margin-bottom: 1rem;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .section-desc {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            max-width: 600px;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        /* Feature Grid */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .feature-card {
+            background: var(--gradient-2);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: var(--gradient-1);
+            transform: scaleX(0);
+            transition: transform 0.4s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(232, 122, 60, 0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .feature-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .feature-icon {
+            width: 56px; height: 56px;
+            background: rgba(232, 122, 60, 0.1);
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .feature-card p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        /* Guide Section */
+        .guide {
+            padding: 8rem 0;
+            background: linear-gradient(180deg, transparent 0%, rgba(232, 122, 60, 0.03) 50%, transparent 100%);
+        }
+
+        .guide-flow {
+            display: flex;
+            align-items: stretch;
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .guide-step {
+            flex: 1;
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .guide-step:hover {
+            border-color: rgba(232, 122, 60, 0.3);
+        }
+
+        .guide-number {
+            position: absolute;
+            top: -1rem;
+            left: 2rem;
+            width: 3rem; height: 3rem;
+            background: var(--gradient-1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.25rem;
+            box-shadow: 0 4px 16px var(--accent-glow);
+        }
+
+        .guide-step h3 {
+            margin-top: 1rem;
+            margin-bottom: 0.75rem;
+            font-size: 1.2rem;
+        }
+
+        .guide-step p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+        }
+
+        .guide-tag {
+            display: inline-block;
+            padding: 0.375rem 0.875rem;
+            background: rgba(232, 122, 60, 0.1);
+            border: 1px solid rgba(232, 122, 60, 0.2);
+            border-radius: 2rem;
+            font-size: 0.8rem;
+            color: var(--accent-light);
+        }
+
+        .guide-arrow {
+            display: flex;
+            align-items: center;
+            font-size: 2rem;
+            color: var(--accent);
+            flex-shrink: 0;
+        }
+
+        /* Structure Section - Category Cards (Dark Theme) */
+        .structure-categories {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .category-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 1.25rem;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .category-card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 8px 32px var(--accent-glow);
+            transform: translateY(-4px);
+        }
+
+        .category-header {
+            padding: 1.25rem 1.5rem;
+            background: var(--bg-elevated);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .category-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--gradient-1);
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+        }
+
+        .category-header h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .category-body {
+            padding: 1rem 1.5rem;
+        }
+
+        .dir-item {
+            padding: 0.75rem 0;
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.06);
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+
+        .dir-item:last-child {
+            border-bottom: none;
+        }
+
+        .dir-icon {
+            flex-shrink: 0;
+            width: 20px;
+            height: 20px;
+            margin-top: 2px;
+        }
+
+        .dir-icon.folder {
+            color: var(--accent);
+        }
+
+        .dir-icon.file {
+            color: var(--text-muted);
+        }
+
+        .dir-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .dir-name {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            word-break: break-all;
+        }
+
+        .dir-desc {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            margin-top: 0.25rem;
+        }
+
+        .dir-children {
+            margin-top: 0.5rem;
+            padding-left: 1.25rem;
+            border-left: 2px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .dir-child-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.375rem 0;
+            font-size: 0.8rem;
+        }
+
+        .dir-child-item .dir-name {
+            font-size: 0.8rem;
+        }
+
+        .dir-child-item .dir-icon {
+            width: 14px;
+            height: 14px;
+        }
+
+        /* Platforms Section */
+        .platforms {
+            padding: 8rem 0;
+            text-align: center;
+        }
+
+        .platform-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 3rem;
+        }
+
+        .platform-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 1rem;
+            padding: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .platform-card:hover {
+            border-color: rgba(232, 122, 60, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .platform-card h4 {
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .platform-card p {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        /* Problem/Solution Section */
+        .problem-solution {
+            padding: 8rem 0;
+        }
+
+        .ps-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            margin-top: 3rem;
+        }
+
+        .ps-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 1.5rem;
+            padding: 2rem;
+        }
+
+        .ps-card h3 {
+            font-size: 1.25rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .ps-card.bad h3 { color: #FF6B6B; }
+        .ps-card.good h3 { color: #4ADE80; }
+
+        .ps-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            padding: 1rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .ps-item:last-child { border-bottom: none; }
+
+        .ps-icon {
+            width: 36px; height: 36px;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .ps-card.bad .ps-icon { background: rgba(255, 107, 107, 0.1); }
+        .ps-card.good .ps-icon { background: rgba(74, 222, 128, 0.1); }
+
+        .ps-content h4 {
+            font-size: 0.95rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .ps-content p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* Dev-Extract Section */
+        .dextract {
+            padding: 8rem 0;
+            background: linear-gradient(180deg, transparent 0%, rgba(232, 122, 60, 0.03) 50%, transparent 100%);
+        }
+
+        .dextract-intro {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .dextract-intro p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            max-width: 700px;
+            margin: 1rem auto 0;
+        }
+
+        .dextract-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .dextract-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .dextract-card:hover {
+            border-color: rgba(232, 122, 60, 0.3);
+        }
+
+        .dextract-card h4 {
+            font-size: 0.95rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .dextract-card p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Obsidian Section */
+        .obsidian {
+            padding: 8rem 0;
+        }
+
+        .obsidian-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            align-items: center;
+        }
+
+        .obsidian-text h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .obsidian-text p {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+        }
+
+        .obsidian-features {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .obsidian-feature {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.95rem;
+        }
+
+        .obsidian-feature svg {
+            width: 20px; height: 20px;
+            stroke: var(--accent);
+        }
+
+        .obsidian-visual {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .obsidian-visual h4 {
+            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
+        }
+
+        .obsidian-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            justify-content: center;
+        }
+
+        .obsidian-tag {
+            padding: 0.5rem 1rem;
+            background: rgba(232, 122, 60, 0.1);
+            border: 1px solid rgba(232, 122, 60, 0.2);
+            border-radius: 2rem;
+            font-size: 0.85rem;
+        }
+
+        /* Users Section */
+        .users {
+            padding: 8rem 0;
+            background: linear-gradient(180deg, transparent 0%, rgba(232, 122, 60, 0.03) 50%, transparent 100%);
+            text-align: center;
+        }
+
+        .users-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 3rem;
+        }
+
+        .user-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 1rem;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .user-card:hover {
+            border-color: rgba(232, 122, 60, 0.3);
+        }
+
+        .user-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .user-card h4 {
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .user-card p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Footer */
+        footer {
+            padding: 4rem 0;
+            text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        footer p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 1rem;
+        }
+
+        .footer-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.85rem;
+        }
+
+        .footer-links a:hover {
+            color: var(--accent);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container { padding: 0 1.25rem; }
+            .hero { min-height: 80vh; }
+            .guide-flow { flex-direction: column; }
+            .guide-arrow { display: none; }
+            .features-grid, .structure-grid, .platform-grid, .dextract-grid, .users-grid {
+                grid-template-columns: 1fr;
+            }
+            .ps-grid, .obsidian-content { grid-template-columns: 1fr; }
+            .section-title { font-size: 2rem; }
+        }
+
+        /* Animation on scroll */
+        .animate-on-scroll {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .animate-on-scroll.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Fixed Navigation Bar */
+        .fixed-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(13, 13, 13, 0.9);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            z-index: 1000;
+            padding: 0.75rem 2rem;
+            transform: translateY(-100%);
+            transition: transform 0.3s ease;
+        }
+
+        .fixed-nav.visible {
+            transform: translateY(0);
+        }
+
+        .fixed-nav-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .fixed-nav-brand {
+            font-family: 'Noto Serif SC', serif;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .fixed-nav-sections {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .fixed-nav-link {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-decoration: none;
+            transition: color 0.2s ease;
+            position: relative;
+        }
+
+        .fixed-nav-link:hover,
+        .fixed-nav-link.active {
+            color: var(--accent);
+        }
+
+        .fixed-nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--accent);
+            border-radius: 1px;
+        }
+
+        @media (max-width: 768px) {
+            .fixed-nav {
+                padding: 0.5rem 1rem;
+            }
+            .fixed-nav-sections {
+                gap: 1rem;
+            }
+            .fixed-nav-link {
+                font-size: 0.75rem;
+            }
+        }
+
+        /* Gradient text utility */
+        .gradient-text {
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+    </style>
+</head>
+<body>
+    <!-- Fixed Navigation Bar -->
+    <nav class="fixed-nav" id="fixedNav">
+        <div class="fixed-nav-inner">
+            <div class="fixed-nav-brand">知识库构建器</div>
+            <div class="fixed-nav-sections">
+                <a href="#features" class="fixed-nav-link">核心特性</a>
+                <a href="#guide" class="fixed-nav-link">新手必读</a>
+                <a href="#structure" class="fixed-nav-link">目录结构</a>
+                <a href="#dextract" class="fixed-nav-link">开发知识</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <canvas id="hero-canvas"></canvas>
+        <div class="badge">
+            <span class="badge-dot"></span>
+            <span>AI 驱动的知识库生成工具</span>
+        </div>
+        
+        <h1 class="hero-title">知识库构建器</h1>
+        
+        <p class="hero-subtitle">
+            AI 驱动的个人/团队知识库生成工具。从零搭建结构化知识库，让信息有序流转。
+        </p>
+        
+        <div class="cta-group">
+            <a href="#guide" class="btn btn-primary">
+                开始阅读
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+            </a>
+            <a href="https://github.com/your-repo" class="btn btn-secondary" target="_blank">
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.81.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+                </svg>
+                GitHub
+            </a>
+        </div>
+        
+        <div class="scroll-indicator" id="scrollDown">
+            <div class="scroll-indicator-content">
+                <span class="scroll-indicator-text">向下滚动</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 5v14M5 12l7 7 7-7"/>
+                </svg>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="container">
+            <div class="section-header animate-on-scroll">
+                <span class="section-label">核心特性</span>
+                <h2 class="section-title">从资料到知识，一气呵成</h2>
+                <p class="section-desc">AI 自动完成所有整理工作，你只管看</p>
+            </div>
+            
+            <div class="features-grid">
+                <div class="feature-card animate-on-scroll">
+                    <div class="feature-icon">📋</div>
+                    <h3>问卷引导</h3>
+                    <p>8 题问卷了解你的领域，自动生成分类目录，零门槛上手</p>
+                </div>
+                <div class="feature-card animate-on-scroll">
+                    <div class="feature-icon">🤖</div>
+                    <h3>AI 编译</h3>
+                    <p>原始资料 → 摘要 → 概念 → 实体，全自动结构化处理</p>
+                </div>
+                <div class="feature-card animate-on-scroll">
+                    <div class="feature-icon">🔗</div>
+                    <h3>双向链接</h3>
+                    <p>知识页面自动互链，Obsidian 图形视图可视化探索</p>
+                </div>
+                <div class="feature-card animate-on-scroll">
+                    <div class="feature-icon">⚡</div>
+                    <h3>增量更新</h3>
+                    <p>只处理新增资料，智能识别已编译内容，不重复工作</p>
+                </div>
+                <div class="feature-card animate-on-scroll">
+                    <div class="feature-icon">🔍</div>
+                    <h3>健康检查</h3>
+                    <p>Lint 检查矛盾信息、孤立页面、过时内容，保持知识库整洁</p>
+                </div>
+                <div class="feature-card animate-on-scroll">
+                    <div class="feature-icon">💡</div>
+                    <h3>开发知识点</h3>
+                    <p>dev-extract 自动从对话中提炼 bug/配置/决策等 7 类知识</p>
+                </div>
+                <div class="feature-card animate-on-scroll">
+                    <div class="feature-icon">🌐</div>
+                    <h3>跨平台支持</h3>
+                    <p>支持 OpenCode、Claude Code 等主流 AI Agent 平台</p>
+                </div>
+                <div class="feature-card animate-on-scroll">
+                    <div class="feature-icon">📦</div>
+                    <h3>渐进式加载</h3>
+                    <p>工作流和模板按需读取，优化 Token 消耗</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+
+    <!-- Guide Section -->
+    <section class="guide" id="guide">
+        <div class="container">
+            <div class="section-header animate-on-scroll">
+                <span class="section-label">快速开始</span>
+                <h2 class="section-title">5 分钟搭建你的第一个知识库</h2>
+                <p class="section-desc">克隆项目 → 配置 Skill → 初始化 → 使用</p>
+            </div>
+            
+            <div class="guide-flow">
+                <div class="guide-step animate-on-scroll">
+                    <div class="guide-number">1</div>
+                    <h3>克隆项目</h3>
+                    <div class="code-block">git clone &lt;仓库地址&gt;<br>cd 知识库构建器</div>
+                </div>
+                <div class="guide-arrow">→</div>
+                <div class="guide-step animate-on-scroll">
+                    <div class="guide-number">2</div>
+                    <h3>配置 Skill</h3>
+                    <p>将 skills/ 目录加载到你的 Agent 工具</p>
+                </div>
+                <div class="guide-arrow">→</div>
+                <div class="guide-step animate-on-scroll">
+                    <div class="guide-number">3</div>
+                    <h3>初始化知识库</h3>
+                    <p>对 AI 说「初始化知识库」</p>
+                    <div class="code-block">请帮我初始化知识库</div>
+                </div>
+            </div>
+            <div class="guide-flow" style="margin-top: 1.5rem;">
+                <div class="guide-step animate-on-scroll">
+                    <div class="guide-number">4</div>
+                    <h3>投放资料</h3>
+                    <p>将 .md .txt .pdf .docx 放入原始资料/</p>
+                </div>
+                <div class="guide-arrow">→</div>
+                <div class="guide-step animate-on-scroll">
+                    <div class="guide-number">5</div>
+                    <h3>AI 自动编译</h3>
+                    <p>请处理新文件</p>
+                    <div class="code-block">请处理 原始资料/ 下的新文件</div>
+                </div>
+                <div class="guide-arrow">→</div>
+                <div class="guide-step animate-on-scroll">
+                    <div class="guide-number">6</div>
+                    <h3>日常使用</h3>
+                    <p>Lint / 问答 / 更新 / 归档</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+
+    <!-- Structure Section -->
+    <section class="structure" id="structure">
+        <div class="container">
+            <div class="section-header animate-on-scroll">
+                <span class="section-label">目录结构</span>
+                <h2 class="section-title">清晰分层，按需加载</h2>
+                <p class="section-desc">三层架构：Raw Sources / Wiki / Schema</p>
+            </div>
+            
+            <div class="structure-categories">
+                <!-- 核心文件 -->
+                <div class="category-card animate-on-scroll">
+                    <div class="category-header">
+                        <div class="category-icon">📄</div>
+                        <h3>核心文件</h3>
+                    </div>
+                    <div class="category-body">
+                        <div class="dir-item">
+                            <svg class="dir-icon file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            <div class="dir-content">
+                                <div class="dir-name">AGENTS.md</div>
+                                <div class="dir-desc">AI 工作流规范（OpenCode 入口）</div>
+                            </div>
+                        </div>
+                        <div class="dir-item">
+                            <svg class="dir-icon file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            <div class="dir-content">
+                                <div class="dir-name">CLAUDE.md</div>
+                                <div class="dir-desc">AI 工作流规范（Claude Code 入口）</div>
+                            </div>
+                        </div>
+                        <div class="dir-item">
+                            <svg class="dir-icon file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            <div class="dir-content">
+                                <div class="dir-name">OpenCode安装与配置.md</div>
+                                <div class="dir-desc">OpenCode 安装与 Skill 配置指南</div>
+                            </div>
+                        </div>
+                        <div class="dir-item">
+                            <svg class="dir-icon file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            <div class="dir-content">
+                                <div class="dir-name">ClaudeCode安装与配置.md</div>
+                                <div class="dir-desc">Claude Code 安装与 Skill 配置指南</div>
+                            </div>
+                        </div>
+                        <div class="dir-item">
+                            <svg class="dir-icon file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            <div class="dir-content">
+                                <div class="dir-name">教程.md</div>
+                                <div class="dir-desc">完整使用教程（本地保留，不上传 Git）</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- agents 按需加载层 -->
+                <div class="category-card animate-on-scroll">
+                    <div class="category-header">
+                        <div class="category-icon">⚙️</div>
+                        <h3>agents 按需加载层</h3>
+                    </div>
+                    <div class="category-body">
+                        <div class="dir-item">
+                            <svg class="dir-icon folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                            <div class="dir-content">
+                                <div class="dir-name">templates/</div>
+                                <div class="dir-desc">页面模板</div>
+                                <div class="dir-children">
+                                    <div class="dir-child-item">
+                                        <svg class="dir-icon file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                        <span class="dir-name">entity.md</span> - 实体页
+                                    </div>
+                                    <div class="dir-child-item">
+                                        <svg class="dir-icon file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                        <span class="dir-name">concept.md</span> - 概念页
+                                    </div>
+                                    <div class="dir-child-item">
+                                        <svg class="dir-icon file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                        <span class="dir-name">summary.md</span> - 摘要页
+                                    </div>
+                                    <div class="dir-child-item">
+                                        <svg class="dir-icon file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                        <span class="dir-name">analysis.md</span> - 分析页
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="dir-item">
+                            <svg class="dir-icon folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                            <div class="dir-content">
+                                <div class="dir-name">workflows/</div>
+                                <div class="dir-desc">工作流定义</div>
+                                <div class="dir-children">
+                                    <div class="dir-child-item">
+                                        <svg class="dir-icon file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                        <span class="dir-name">ingest.md</span> - 处理新源文档
+                                    </div>
+                                    <div class="dir-child-item">
+                                        <svg class="dir-icon file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                        <span class="dir-name">query.md</span> - 问答查询
+                                    </div>
+                                    <div class="dir-child-item">
+                                        <svg class="dir-icon file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                        <span class="dir-name">lint.md</span> - 健康检查
+                                    </div>
+                                    <div class="dir-child-item">
+                                        <svg class="dir-icon file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                        <span class="dir-name">update.md</span> - 更新页面
+                                    </div>
+                                    <div class="dir-child-item">
+                                        <svg class="dir-icon file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                        <span class="dir-name">archive.md</span> - 归档清理
+                                    </div>
+                                    <div class="dir-child-item">
+                                        <svg class="dir-icon file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                        <span class="dir-name">extract.md</span> - 提炼知识
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 原始资料 -->
+                <div class="category-card animate-on-scroll">
+                    <div class="category-header">
+                        <div class="category-icon">📂</div>
+                        <h3>原始资料</h3>
+                    </div>
+                    <div class="category-body">
+                        <div class="dir-item">
+                            <svg class="dir-icon folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                            <div class="dir-content">
+                                <div class="dir-name">原始资料/</div>
+                                <div class="dir-desc">用户放置的原始文档（不可修改）</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- wiki AI 生成 -->
+                <div class="category-card animate-on-scroll">
+                    <div class="category-header">
+                        <div class="category-icon">🧠</div>
+                        <h3>wiki AI 生成</h3>
+                    </div>
+                    <div class="category-body">
+                        <div class="dir-item">
+                            <svg class="dir-icon folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                            <div class="dir-content">
+                                <div class="dir-name">wiki/</div>
+                                <div class="dir-desc">AI 自动生成的结构化知识</div>
+                                <div class="dir-children">
+                                    <div class="dir-child-item">
+                                        <svg class="dir-icon folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                                        <span class="dir-name">entities/</span> - 实体页
+                                    </div>
+                                    <div class="dir-child-item">
+                                        <svg class="dir-icon folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                                        <span class="dir-name">concepts/</span> - 概念页
+                                    </div>
+                                    <div class="dir-child-item">
+                                        <svg class="dir-icon folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                                        <span class="dir-name">summaries/</span> - 摘要页
+                                    </div>
+                                    <div class="dir-child-item">
+                                        <svg class="dir-icon folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                                        <span class="dir-name">analysis/</span> - 分析页
+                                    </div>
+                                    <div class="dir-child-item">
+                                        <svg class="dir-icon folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                                        <span class="dir-name">dev-notes/</span> - 开发知识点
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+
+    <!-- Problem/Solution Section -->
+    <section class="problem-solution">
+        <div class="container">
+            <div class="section-header animate-on-scroll">
+                <span class="section-label">解决问题</span>
+                <h2 class="section-title">为什么需要知识库构建器</h2>
+            </div>
+            
+            <div class="ps-grid">
+                <div class="ps-card bad animate-on-scroll">
+                    <h3>❌ 传统知识库的痛点</h3>
+                    <div class="ps-item">
+                        <div class="ps-icon">📚</div>
+                        <div class="ps-content">
+                            <h4>整理成本高</h4>
+                            <p>手动分类、打标签、建链接，耗时耗力</p>
+                        </div>
+                    </div>
+                    <div class="ps-item">
+                        <div class="ps-icon">🗂️</div>
+                        <div class="ps-content">
+                            <h4>知识碎片化</h4>
+                            <p>资料散落在浏览器书签、微信收藏、本地文件夹</p>
+                        </div>
+                    </div>
+                    <div class="ps-item">
+                        <div class="ps-icon">🔎</div>
+                        <div class="ps-content">
+                            <h4>检索困难</h4>
+                            <p>搜索只能匹配关键词，找不到深层关联</p>
+                        </div>
+                    </div>
+                    <div class="ps-item">
+                        <div class="ps-icon">👥</div>
+                        <div class="ps-content">
+                            <h4>团队协作难</h4>
+                            <p>每个人的知识组织方式不同，无法统一</p>
+                        </div>
+                    </div>
+                    <div class="ps-item">
+                        <div class="ps-icon">⏰</div>
+                        <div class="ps-content">
+                            <h4>过时内容</h4>
+                            <p>技术更新后，旧知识无人维护，误导新人</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="ps-card good animate-on-scroll">
+                    <h3>✅ 知识库构建器的解决方案</h3>
+                    <div class="ps-item">
+                        <div class="ps-icon">🤖</div>
+                        <div class="ps-content">
+                            <h4>AI 自动编译</h4>
+                            <p>原始资料 → 摘要 → 概念 → 实体，全自动结构化</p>
+                        </div>
+                    </div>
+                    <div class="ps-item">
+                        <div class="ps-icon">📥</div>
+                        <div class="ps-content">
+                            <h4>统一入口</h4>
+                            <p>所有资料放入 原始资料/，AI 自动分类整理</p>
+                        </div>
+                    </div>
+                    <div class="ps-item">
+                        <div class="ps-icon">🔗</div>
+                        <div class="ps-content">
+                            <h4>双向链接 + 图形视图</h4>
+                            <p>概念自动互链，Obsidian 可视化知识网络</p>
+                        </div>
+                    </div>
+                    <div class="ps-item">
+                        <div class="ps-icon">📋</div>
+                        <div class="ps-content">
+                            <h4>标准化工作流</h4>
+                            <p>AGENTS.md / CLAUDE.md 定义统一规范，多人协作不冲突</p>
+                        </div>
+                    </div>
+                    <div class="ps-item">
+                        <div class="ps-icon">🔍</div>
+                        <div class="ps-content">
+                            <h4>健康检查</h4>
+                            <p>Lint 自动检测矛盾、孤立页面、过时内容</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+
+    <!-- Dev-Extract Section -->
+    <section class="dextract" id="dextract">
+        <div class="container">
+            <div class="dextract-intro animate-on-scroll">
+                <span class="section-label">开发利器</span>
+                <h2 class="section-title">dev-extract 独立 Skill</h2>
+                <p>适合开发者在日常编码中自动提炼知识点。可以说"记录一下"触发，AI 自动完成。</p>
+            </div>
+            
+            <div class="dextract-grid">
+                <div class="dextract-card animate-on-scroll">
+                    <h4>🐛 报错与修复</h4>
+                    <p>报错信息 + 根因分析 + 修复步骤</p>
+                </div>
+                <div class="dextract-card animate-on-scroll">
+                    <h4>⚠️ 踩坑记录</h4>
+                    <p>陷阱场景 + 错误写法 vs 正确写法</p>
+                </div>
+                <div class="dextract-card animate-on-scroll">
+                    <h4>📋 配置配方</h4>
+                    <p>配置步骤 + 验证方法 + 参数说明</p>
+                </div>
+                <div class="dextract-card animate-on-scroll">
+                    <h4>🔀 方案决策</h4>
+                    <p>方案对比 + 决策矩阵 + 原理深挖</p>
+                </div>
+                <div class="dextract-card animate-on-scroll">
+                    <h4>🏗️ 架构设计</h4>
+                    <p>架构图 + 模块划分 + 数据流</p>
+                </div>
+                <div class="dextract-card animate-on-scroll">
+                    <h4>📦 库/框架选型</h4>
+                    <p>候选对比 + 选择理由 + 使用心得</p>
+                </div>
+                <div class="dextract-card animate-on-scroll">
+                    <h4>⚡ 性能优化</h4>
+                    <p>瓶颈定位 + 优化方案 + 效果对比</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+
+    <!-- Obsidian Section -->
+    <section class="obsidian">
+        <div class="container">
+            <div class="obsidian-content">
+                <div class="obsidian-text animate-on-scroll">
+                    <span class="section-label">完美集成</span>
+                    <h2 class="section-title">Obsidian 搭档</h2>
+                    <p>知识库构建器与 Obsidian 完美配合，提供最佳的知识浏览和管理体验。</p>
+                    <div class="obsidian-features">
+                        <div class="obsidian-feature">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                            <span>双向链接：[[概念名]] 自动互链</span>
+                        </div>
+                        <div class="obsidian-feature">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                            <span>图形视图：知识网络可视化</span>
+                        </div>
+                        <div class="obsidian-feature">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                            <span>本地优先：所有数据存在本地</span>
+                        </div>
+                        <div class="obsidian-feature">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                            <span>插件生态：Dataview、Templater、Excalidraw</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="obsidian-visual animate-on-scroll">
+                    <h4>推荐插件</h4>
+                    <div class="obsidian-tags">
+                        <span class="obsidian-tag">Dataview</span>
+                        <span class="obsidian-tag">Templater</span>
+                        <span class="obsidian-tag">Excalidraw</span>
+                        <span class="obsidian-tag">Marp</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+
+    <!-- Platforms Section -->
+    <section class="platforms" style="padding: 8rem 0; text-align: center;">
+        <div class="container">
+            <div class="section-header animate-on-scroll">
+                <span class="section-label">跨平台兼容</span>
+                <h2 class="section-title" style="font-size: 2.5rem;">支持的平台</h2>
+                <p class="section-desc" style="color: var(--text-secondary); font-size: 1.1rem; max-width: 600px; margin: 1rem auto 0;">OpenCode、Claude Code 等主流 AI Agent 开箱即用</p>
+            </div>
+            
+            <div class="platform-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 3rem;">
+                <div class="platform-card animate-on-scroll" style="background: var(--bg-card); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 1rem; padding: 2rem; transition: all 0.3s ease;">
+                    <h4 style="font-size: 1rem; margin-bottom: 0.5rem;">OpenCode</h4>
+                    <p style="color: var(--text-muted); font-size: 0.85rem;">主要支持平台</p>
+                </div>
+                <div class="platform-card animate-on-scroll" style="background: var(--bg-card); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 1rem; padding: 2rem; transition: all 0.3s ease;">
+                    <h4 style="font-size: 1rem; margin-bottom: 0.5rem;">Claude Code</h4>
+                    <p style="color: var(--text-muted); font-size: 0.85rem;">完整兼容</p>
+                </div>
+                <div class="platform-card animate-on-scroll" style="background: var(--bg-card); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 1rem; padding: 2rem; transition: all 0.3s ease;">
+                    <h4 style="font-size: 1rem; margin-bottom: 0.5rem;">Copilot CLI</h4>
+                    <p style="color: var(--text-muted); font-size: 0.85rem;">社区支持</p>
+                </div>
+                <div class="platform-card animate-on-scroll" style="background: var(--bg-card); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 1rem; padding: 2rem; transition: all 0.3s ease;">
+                    <h4 style="font-size: 1rem; margin-bottom: 0.5rem;">Gemini CLI</h4>
+                    <p style="color: var(--text-muted); font-size: 0.85rem;">社区支持</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+
+    <!-- Users Section -->
+    <section class="users">
+        <div class="container">
+            <div class="section-header animate-on-scroll">
+                <span class="section-label">适用人群</span>
+                <h2 class="section-title">谁适合用</h2>
+            </div>
+            
+            <div class="users-grid">
+                <div class="user-card animate-on-scroll">
+                    <div class="user-icon">📚</div>
+                    <h4>个人知识整理</h4>
+                    <p>将散落的资料变成可查询的知识库</p>
+                </div>
+                <div class="user-card animate-on-scroll">
+                    <div class="user-icon">👥</div>
+                    <h4>团队知识共享</h4>
+                    <p>统一格式，多人协作，Git 管理版本</p>
+                </div>
+                <div class="user-card animate-on-scroll">
+                    <div class="user-icon">💻</div>
+                    <h4>开发知识沉淀</h4>
+                    <p>dev-extract 自动提炼 bug/配置/决策等知识点</p>
+                </div>
+                <div class="user-card animate-on-scroll">
+                    <div class="user-icon">📖</div>
+                    <h4>学习笔记管理</h4>
+                    <p>AI 自动整理概念，建立知识关联</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <p>知识库构建器 · 让信息有序流转</p>
+            <div class="footer-links">
+                <a href="#">MIT 许可证</a>
+                <a href="#">贡献</a>
+                <a href="#">GitHub</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Hero particle animation
+        (function() {
+            const canvas = document.getElementById('hero-canvas');
+            const ctx = canvas.getContext('2d');
+            let particles = [];
+            let animationId;
+
+            function resize() {
+                canvas.width = canvas.offsetWidth;
+                canvas.height = canvas.offsetHeight;
+            }
+
+            function createParticle() {
+                return {
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 2 + 0.5,
+                    speedX: (Math.random() - 0.5) * 0.3,
+                    speedY: (Math.random() - 0.5) * 0.3,
+                    opacity: Math.random() * 0.5 + 0.2,
+                    pulse: Math.random() * Math.PI * 2
+                };
+            }
+
+            function initParticles() {
+                particles = [];
+                const count = Math.min(80, Math.floor(canvas.width * canvas.height / 15000));
+                for (let i = 0; i < count; i++) {
+                    particles.push(createParticle());
+                }
+            }
+
+            function drawParticle(p) {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(232, 122, 60, ${p.opacity})`;
+                ctx.fill();
+
+                // Glow effect
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size * 3, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(232, 122, 60, ${p.opacity * 0.2})`;
+                ctx.fill();
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                particles.forEach(p => {
+                    p.x += p.speedX;
+                    p.y += p.speedY;
+                    p.pulse += 0.02;
+
+                    // Wrap around edges
+                    if (p.x < 0) p.x = canvas.width;
+                    if (p.x > canvas.width) p.x = 0;
+                    if (p.y < 0) p.y = canvas.height;
+                    if (p.y > canvas.height) p.y = 0;
+
+                    // Pulse opacity
+                    const pulsedOpacity = p.opacity * (0.7 + 0.3 * Math.sin(p.pulse));
+                    p.currentOpacity = pulsedOpacity;
+
+                    // Draw with current opacity
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(232, 122, 60, ${p.currentOpacity})`;
+                    ctx.fill();
+                });
+
+                // Draw subtle connections
+                particles.forEach((p1, i) => {
+                    particles.slice(i + 1).forEach(p2 => {
+                        const dx = p1.x - p2.x;
+                        const dy = p1.y - p2.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 120) {
+                            ctx.beginPath();
+                            ctx.moveTo(p1.x, p1.y);
+                            ctx.lineTo(p2.x, p2.y);
+                            ctx.strokeStyle = `rgba(232, 122, 60, ${0.1 * (1 - dist / 120)})`;
+                            ctx.lineWidth = 0.5;
+                            ctx.stroke();
+                        }
+                    });
+                });
+
+                animationId = requestAnimationFrame(animate);
+            }
+
+            // Initialize
+            resize();
+            initParticles();
+            animate();
+
+            // Handle resize
+            window.addEventListener('resize', function() {
+                resize();
+                initParticles();
+            });
+        })();
+
+        // Scroll animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.animate-on-scroll').forEach(el => {
+            observer.observe(el);
+        });
+
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+
+        // Scroll down indicator click handler
+        document.getElementById('scrollDown').addEventListener('click', function() {
+            const nextSection = document.querySelector('#features');
+            if (nextSection) {
+                nextSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+
+        // Hide scroll indicator when scrolling down a bit
+        let scrollIndicatorHidden = false;
+        window.addEventListener('scroll', function() {
+            if (!scrollIndicatorHidden && window.scrollY > 100) {
+                document.getElementById('scrollDown').style.opacity = '0';
+                document.getElementById('scrollDown').style.pointerEvents = 'none';
+                scrollIndicatorHidden = true;
+                setTimeout(() => {
+                    document.getElementById('scrollDown').style.opacity = '1';
+                    document.getElementById('scrollDown').style.pointerEvents = 'auto';
+                    scrollIndicatorHidden = false;
+                }, 2000);
+            }
+        });
+
+        // Fixed navigation bar show/hide and active state
+        const fixedNav = document.getElementById('fixedNav');
+        const navLinks = document.querySelectorAll('.fixed-nav-link');
+        const sections = document.querySelectorAll('section[id]');
+
+        function updateFixedNav() {
+            const scrollY = window.scrollY;
+            const windowHeight = window.innerHeight;
+
+            // Show/hide fixed nav
+            if (scrollY > windowHeight * 0.5) {
+                fixedNav.classList.add('visible');
+            } else {
+                fixedNav.classList.remove('visible');
+            }
+
+            // Update active link
+            let currentSection = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop - 100;
+                const sectionHeight = section.offsetHeight;
+                if (scrollY >= sectionTop && scrollY < sectionTop + sectionHeight) {
+                    currentSection = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === '#' + currentSection) {
+                    link.classList.add('active');
+                }
+            });
+        }
+
+        window.addEventListener('scroll', updateFixedNav);
+        updateFixedNav();
+    </script>
+</body>
+</html>
